@@ -360,8 +360,7 @@ def run_fault_test(scheduling_mode):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", action="store_true", help="Whether or not to transmit UDP"
-                                                                                  " packets.")
+    parser.add_argument("-t", action="store_true", help="Whether or not to transmit UDP packets.")
     args = parser.parse_args()
     os.environ["ROBOTSIM_TRANSMIT"] = str(args.t)
     faulty = [0.0001, 0.001, 0.001, 0.001]
@@ -371,7 +370,7 @@ if __name__ == "__main__":
                      perfect_scenario, True, 1000)
 
     sim.run_simulation(True,True)
-    sim.print_priority_info()
+    #sim.print_priority_info()
 
 
 
