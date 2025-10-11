@@ -2,11 +2,13 @@
 MRWS is a Python-based simulator for a robotic smart warehouse, with many configurable properties. It supports connection to Unity for visualisation.
 
 ## Project Structure
+```
 ├── README.md
 ├── data/: simulation-related data
 ├── requirements.txt
 ├── src/: Python source code
 └── viz/: visualisation (Unity project)
+```
 
 ## Requirements
 Simulator:
