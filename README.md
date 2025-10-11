@@ -1,22 +1,21 @@
-# RobotWarehouse
-A python simulator for a robotic smart warehouse, with many configurable properties.
+# MRWS: MultiRobot Warehouse Scheduling Framework
+MRWS is a Python-based simulator for a robotic smart warehouse, with many configurable properties. It supports connection to Unity for visualisation.
 
 ## Project Structure
-
-- doc/: documentations
-- simu/: simulator (Python)
-- viz/: visualisor (Unity)
+├── README.md
+├── data/: simulation-related data
+├── requirements.txt
+├── src/: Python source code
+└── viz/: visualisation (Unity project)
 
 ## Requirements
-
-Simulation:
-
+Simulator:
 - Python >= 3.11
 - pygad
 - matplotlib
+- numpy
 
-Visualisation:
-
+Visualisator:
 - Unity == 6000..0.41f1
 
 ## Usage

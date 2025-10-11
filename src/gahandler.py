@@ -1,14 +1,13 @@
-import customexceptions
-import copy
 import math
-import entitywithinventory
+import copy
 
+import customexceptions
+import entitywithinventory
 
 def encode_string_utf8_to_int(string1):
     bytes_value = string1.encode('utf-8')
     int_value = int.from_bytes(bytes_value, 'little')
     return int_value
-
 
 def decode_utf8_int_to_string(int1):
     int_val = int(int1)
@@ -56,8 +55,6 @@ def return_how_close(orders, inventories):
                 break
 
     return (float(correct_ctr) / total_items)
-
-
 
 def schedules_have_not_completed(schedules):
     for schedule in schedules:
@@ -271,6 +268,7 @@ class GAHandler:
 
     def get_int_genes(self):
         return self._all_gene_ints
+    
     def set_distance_graph(self, graph):
         self._distance_graph = graph
 

@@ -1,16 +1,19 @@
-import customexceptions
-import warehouse
-import robot
 import os
-import argparse
-import time
-import statistics
-import shutil
 import random
 import math
 import matplotlib
-
+import statistics
+import argparse
+import time
+import shutil
 from operator import add
+
+import customexceptions
+import warehouse
+import robot
+import simulation
+
+import matplotlib.pyplot as plt
 
 class Simulation:
     def __init__(self, num_sims:int, whouse:str, num_items:int, inv_size:int, schedule_mode:str, fault_rates, fault_mode, step_limit, side_len = None):
@@ -88,8 +91,6 @@ class Simulation:
                     self.order_prio_sorted_completion_time_lists[prio_num].append(order_list[1])
 
     def print_priority_info(self):
-        import matplotlib.pyplot as plt
-        import numpy as np
         fig = plt.figure(figsize=(8,8))
 
         for j in range(5):
@@ -189,6 +190,7 @@ def gen_nxn_warehouse(robot_num, side_len):
 
     return filename
 
+
 def run_simulation_performance_test(scheduling_mode:str, robots_max:int, size_max:int, step_limit:int):
     try:
         os.makedirs("tmp")
@@ -212,11 +214,6 @@ def run_simulation_performance_test(scheduling_mode:str, robots_max:int, size_ma
         ctr += 1
     print(results)
 
-    import numpy
-    import matplotlib.pyplot as plt
-    import matplotlib
-    import matplotlib.ticker as ticker
-    from mpl_toolkits.mplot3d import proj3d
 
     res = numpy.array(results)
     fig = plt.figure(figsize=(8,8))
@@ -231,8 +228,6 @@ def run_simulation_performance_test(scheduling_mode:str, robots_max:int, size_ma
         mini_res = numpy.array(robot_line)
         ax.plot(mini_res[:, 0], mini_res[:, 1], mini_res[:, 2], color="grey")
     ax.scatter(x, y, z, c=z, cmap=matplotlib.colormaps.get_cmap("inferno"))
-
-
 
     ax.set_xlabel('Amount of Robots')
     ax.set_ylabel('Warehouse side length')
@@ -264,8 +259,6 @@ def run_completion_time_test(fault_rates):
 
     steps = [sim.print_steps_taken(), sim_1.print_steps_taken(), sim_2.print_steps_taken(), sim_3.print_steps_taken()]
 
-    import matplotlib.pyplot as plt
-    import numpy as np
 
     fig = plt.figure(figsize=(8, 8))
     plt.boxplot(steps)
@@ -276,6 +269,7 @@ def run_completion_time_test(fault_rates):
     ax.set_ylabel("Amount of steps")
     plt.show()
 
+
 def run_fault_test(scheduling_mode):
     faulty = [0.0001, 0.001, 0.001, 0.001]
     num_sims = 250
@@ -285,8 +279,6 @@ def run_fault_test(scheduling_mode):
 
     sim_1 = Simulation(num_sims, "whouse2.txt", 10, 3, scheduling_mode,
                        faulty, False, 1500)
-
-
 
     sim.run_simulation(False, False)
     sim_1.run_simulation(False, False)
@@ -315,8 +307,7 @@ def run_fault_test(scheduling_mode):
         if "empty" in str(error_message) or "violated" in str(error_message):
             error_types_2[2] += 1
 
-    import matplotlib.pyplot as plt
-    import numpy as np
+
     types = ("Total Critically Faulted Simulations", "Collisions", "Scheduling Violation", "Overruns")
 
     x = np.arange(len(types))  # the label locations
@@ -354,29 +345,3 @@ def run_fault_test(scheduling_mode):
     ax.legend(loc='upper left', ncols=3)
     ax.set_ylim(0, error_types_2[0] + 50)
     plt.show()
-
-
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-t", action="store_true", help="Whether or not to transmit UDP packets.")
-    args = parser.parse_args()
-    os.environ["ROBOTSIM_TRANSMIT"] = str(args.t)
-    faulty = [0.0001, 0.001, 0.001, 0.001]
-    perfect_scenario = [0, 0, 0, 0]
-
-    sim = Simulation(1, "whouse2.txt", 10, 3, "simple-interrupt",
-                     perfect_scenario, True, 1000)
-
-    sim.run_simulation(True,True)
-    #sim.print_priority_info()
-
-
-
-
-
-
-
-
-

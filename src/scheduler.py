@@ -1,14 +1,13 @@
 import copy
 import math
-
+import random
+import pygad
 
 import customexceptions
 import gahandler
 import ordermanager
 import utils
-import pygad
 import order
-import random
 
 class Scheduler:
     def __init__(self, order_manager, robots: dict, shelves: dict, goals: dict, homes: dict, init_orders: list, schedule_mode:str,

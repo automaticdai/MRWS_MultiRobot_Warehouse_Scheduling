@@ -1,7 +1,7 @@
-import order
 import random
 import time
 
+import order
 class OrderManager:
     def __init__(self, num_init_orders: int, num_dynamic_orders: int, item_set: dict, dynamic_deadline:int):
         self._num_init_orders = num_init_orders

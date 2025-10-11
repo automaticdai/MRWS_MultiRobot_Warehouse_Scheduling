@@ -1,7 +1,8 @@
+import math
+import udptransmit
+
 import customexceptions
 import entitywithinventory
-import udptransmit
-import math
 
 
 class OrderStation(entitywithinventory.InventoryEntity):

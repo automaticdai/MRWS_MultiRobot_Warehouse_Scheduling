@@ -1,9 +1,9 @@
-import customexceptions
-import item
 import math
-
 import udptransmit
 import copy
+
+import item
+import customexceptions
 
 # Models an entity with a LIFO stack inventory, where items within the stack must follow a dependency
 class InventoryEntity:
@@ -49,10 +49,8 @@ class InventoryEntity:
             udptransmit.transmit_clear_inventory(self._name)
         self.last_item_dep = math.inf
 
-
     def set_amount_of_items_to_transfer_next_time(self, num):
         self._amount_items_transfer_next_time = num
-
 
     def peek_inventory(self):
         return copy.deepcopy(self._inventory[-1])

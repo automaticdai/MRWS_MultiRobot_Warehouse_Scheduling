@@ -1,8 +1,8 @@
 import random
-
-import udptransmit
-import entitywithinventory
 import math
+import udptransmit
+
+import entitywithinventory
 import shelf
 import orderstation
 import customexceptions
