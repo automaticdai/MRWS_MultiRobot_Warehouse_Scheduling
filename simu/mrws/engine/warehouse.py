@@ -13,6 +13,7 @@ from mrws.engine.order_manager import OrderManager
 from mrws.scheduling.scheduler import Scheduler
 from mrws.engine.pathfinding import compute_astar_path
 from mrws.engine import deadlock
+from mrws.utils import robot_prio_sort_key
 
 class Warehouse:
     def __init__(self, w_house_filename: str, num_items: int, robot_max_inventory: int, schedule_mode: str,
@@ -143,7 +144,11 @@ class Warehouse:
                     if not self.is_within_grid(pos[0], pos[1]):
                         continue
                     if not self.cell_is_full(pos[0],pos[1]):
+                        # Move to a single safe cell out of the faulty robot's
+                        # range, then stop. cell_is_full already excludes cells
+                        # within faulty range, so the chosen cell is safe.
                         self.update_robot_position(robot_obj.get_name(), pos[0], pos[1])
+                        break
 
 
         if robot_obj.get_target() is not None:
@@ -271,7 +276,7 @@ class Warehouse:
                     #print("doing nothing, waiting for the blocking robot to move as it will get out the way")
             else:
                 #print("ATTEMPTING TO RESOLVE DEADLOCK")
-                robots_by_prio = reversed(sorted([robot_obj, blocking_robot], key=lambda robot2: robot2.get_prio()))
+                robots_by_prio = reversed(sorted([robot_obj, blocking_robot], key=robot_prio_sort_key))
                 is_horizontal = (blocking_robot.get_position()[0] - robot_obj.get_position()[0]) != 0
                 self.move_robot_break_deadlock(robot_obj, robots_by_prio, is_horizontal)
 

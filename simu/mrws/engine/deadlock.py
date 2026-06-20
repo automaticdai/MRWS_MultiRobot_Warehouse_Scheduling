@@ -1,4 +1,5 @@
 from mrws.exceptions import SimulationError
+from mrws.utils import robot_prio_sort_key
 
 
 def attempt_resolve_deadlocks(self, robot_obj):
@@ -28,7 +29,7 @@ def attempt_resolve_deadlocks(self, robot_obj):
             elif id(next_robot) in robots_searched_set:
                 break
     if loop_found:
-        robots_by_prio = reversed(sorted(robots_searched, key=lambda robot2: robot2.get_prio()))
+        robots_by_prio = reversed(sorted(robots_searched, key=robot_prio_sort_key))
         self.move_robot_break_deadlock(robot_obj, robots_by_prio)
 
 def get_robot_at(self, x, y):
@@ -109,5 +110,5 @@ def resolve_boxed_in_deadlock(self, robot_obj, x, y):
         raise SimulationError(message)
 
     #print("BOXED IN TARGET DETECTED")
-    robots_by_prio = reversed(sorted(blocking_robots, key=lambda robot2: robot2.get_prio()))
+    robots_by_prio = reversed(sorted(blocking_robots, key=robot_prio_sort_key))
     result = self.move_robots_away_from(x, y, robots_by_prio)

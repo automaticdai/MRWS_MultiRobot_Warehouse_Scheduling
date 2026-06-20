@@ -12,6 +12,20 @@ from mrws.scheduling.ga_handler import (
 )
 
 
+def split_items_among_robots(item_names, num_robots, inventory_size):
+    """Distribute item names across robots in contiguous chunks of at most
+    inventory_size items, one chunk per robot.
+
+    When num_robots == ceil(len(item_names) / inventory_size) (as computed by
+    multi_robot_schedule_simple), every robot receives a non-empty chunk no
+    larger than inventory_size; the final robot may receive fewer items.
+    """
+    groups = [[] for _ in range(num_robots)]
+    for index, name in enumerate(item_names):
+        groups[index // inventory_size].append(name)
+    return groups
+
+
 def reassign_orders_if_faulted(self):
     orders_to_remove = []
     orders_to_add = []
@@ -99,7 +113,6 @@ def multi_robot_schedule_simple(self, fault_tolerant_mode):
 
         if len(free_robots) >= optimal_robots_required:
             selected_robots = free_robots[:optimal_robots_required]
-            item_names_split_by_bots = []
 
             self._order_goal_assignment[order_obj.get_id()] = free_goal_obj.get_name()
             robot_name_list = list(map(lambda r: r.get_name(), selected_robots))
@@ -110,15 +123,10 @@ def multi_robot_schedule_simple(self, fault_tolerant_mode):
             for robot_obj in selected_robots:
                 robot_obj.set_assigned_order(order_obj.get_id())
                 robot_obj.set_prio(order_prio)
-                item_names_split_by_bots.append([])
 
-            robot_ctr = 0
-            robot_inventory_used = 0
-            for item in items_by_dependency:
-                item_names_split_by_bots[robot_ctr].append(item.get_name())
-                robot_inventory_used += 1
-                if robot_inventory_used == self._ROBOT_INVENTORY_SIZE:
-                    robot_ctr += 1
+            item_names_by_dependency = [item.get_name() for item in items_by_dependency]
+            item_names_split_by_bots = split_items_among_robots(
+                item_names_by_dependency, len(selected_robots), self._ROBOT_INVENTORY_SIZE)
 
             robot_ctr = 0
             for item_set in item_names_split_by_bots:
