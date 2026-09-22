@@ -18,6 +18,22 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 DEFAULT_TRANSMIT_DELAY_S = 0.2
 PRIORITY_LEVELS = 5
 
+# Warehouse the batch experiments run on. This used to be spelled out at every
+# call site as "whouse2.txt", which was renamed to whouse7x11.txt without the
+# call sites being updated, so every batch experiment raised FileNotFoundError.
+DEFAULT_EXPERIMENT_WAREHOUSE = os.path.join(DATA_DIR, "whouse7x11.txt")
+DEFAULT_ROBOT_INVENTORY = 3
+
+
+def count_shelves(warehouse_file):
+    """Shelves in a warehouse file, which is how many items it can hold.
+
+    Warehouse.parse_warehouse_file rejects a mismatch between this and the item
+    count, so deriving it beats hard-coding a number next to a filename.
+    """
+    with open(warehouse_file) as handle:
+        return handle.read().count("S")
+
 
 class Simulation:
     def __init__(
@@ -264,17 +280,19 @@ def run_simulation_performance_test(scheduling_mode: str, robots_max: int, size_
     plt.show()
 
 
-def run_completion_time_test(fault_rates):
-    sim = Simulation(500, os.path.join(DATA_DIR, "whouse2.txt"), 10, 3, "simple",
+def run_completion_time_test(fault_rates, num_sims=500, whouse=DEFAULT_EXPERIMENT_WAREHOUSE):
+    num_items = count_shelves(whouse)
+
+    sim = Simulation(num_sims, whouse, num_items, DEFAULT_ROBOT_INVENTORY, "simple",
                      fault_rates, True, 1000)
 
-    sim_1 = Simulation(500, os.path.join(DATA_DIR, "whouse2.txt"), 10, 3, "simple-interrupt",
+    sim_1 = Simulation(num_sims, whouse, num_items, DEFAULT_ROBOT_INVENTORY, "simple-interrupt",
                        fault_rates, True, 1000)
 
-    sim_2 = Simulation(500, os.path.join(DATA_DIR, "whouse2.txt"), 10, 3, "multi-robot",
+    sim_2 = Simulation(num_sims, whouse, num_items, DEFAULT_ROBOT_INVENTORY, "multi-robot",
                        fault_rates, True, 1000)
 
-    sim_3 = Simulation(500, os.path.join(DATA_DIR, "whouse2.txt"), 10, 3, "multi-robot-genetic",
+    sim_3 = Simulation(num_sims, whouse, num_items, DEFAULT_ROBOT_INVENTORY, "multi-robot-genetic",
                        fault_rates, True, 1000)
 
     sim.run_simulation(False, False)
@@ -306,14 +324,14 @@ def _count_error_types(errors):
     return error_types
 
 
-def run_fault_test(scheduling_mode):
+def run_fault_test(scheduling_mode, num_sims=250, whouse=DEFAULT_EXPERIMENT_WAREHOUSE):
     faulty = [0.0001, 0.001, 0.001, 0.001]
-    num_sims = 250
+    num_items = count_shelves(whouse)
 
-    sim = Simulation(num_sims, os.path.join(DATA_DIR, "whouse2.txt"), 10, 3, scheduling_mode,
+    sim = Simulation(num_sims, whouse, num_items, DEFAULT_ROBOT_INVENTORY, scheduling_mode,
                      faulty, True, 1500)
 
-    sim_1 = Simulation(num_sims, os.path.join(DATA_DIR, "whouse2.txt"), 10, 3, scheduling_mode,
+    sim_1 = Simulation(num_sims, whouse, num_items, DEFAULT_ROBOT_INVENTORY, scheduling_mode,
                        faulty, False, 1500)
 
 
