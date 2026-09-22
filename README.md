@@ -83,7 +83,7 @@ Simulations are configured by constructing a `Simulation` object in `main.py`:
 ```python
 sim = Simulation(
     num_sims=1000,                       # Number of simulation runs
-    whouse="whouse2.txt",                # Warehouse layout file
+    whouse="whouse7x11.txt",             # Warehouse layout file
     num_items=10,                        # Number of distinct items (must match shelf count)
     inv_size=3,                          # Robot inventory capacity
     schedule_mode="simple-interrupt",    # Scheduling algorithm
@@ -113,7 +113,7 @@ Warehouse layouts are text files where each character represents a grid cell:
 | `X`  | Empty traversable cell |
 | `W`  | Wall |
 
-Example (`whouse2.txt`):
+Example (`whouse7x11.txt`):
 
 ```
 XXXXXXXXXXX
@@ -192,6 +192,6 @@ Set all to `0` for a fault-free simulation. When `fault_mode=True`, the schedule
 
 `main.py` includes helper functions for running batch experiments with matplotlib visualisation:
 
-- `run_completion_time_test(fault_rates)` — compares all four scheduling algorithms over 500 runs
-- `run_fault_test(scheduling_mode)` — compares fault-tolerant vs non-fault-tolerant strategies
+- `run_completion_time_test(fault_rates, num_sims=500, whouse=...)` — compares all four scheduling algorithms
+- `run_fault_test(scheduling_mode, num_sims=250, whouse=...)` — compares fault-tolerant vs non-fault-tolerant strategies
 - `run_simulation_performance_test(scheduling_mode, robots_max, size_max, step_limit)` — benchmarks step time across varying warehouse sizes and robot counts
