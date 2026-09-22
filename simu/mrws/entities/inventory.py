@@ -1,6 +1,6 @@
 from mrws.exceptions import SimulationError
 from mrws.models.item import Item
-from mrws.io import udp
+from mrws.io import transport
 import math
 import copy
 
@@ -26,7 +26,7 @@ class InventoryEntity:
                 raise SimulationError("Inventory of object %s overfilled" % self._name)
 
             if self._should_transmit:
-                udp.transmit_item_gained(self._name, item_to_add.get_name())
+                transport.transmit_item_gained(self._name, item_to_add.get_name())
         else:
             raise SimulationError("Item dependency rule violated by object %s" % self._name)
 
@@ -35,7 +35,7 @@ class InventoryEntity:
             raise SimulationError("Tried to pop from an empty inventory")
         popped_item = self._inventory.pop()
         if self._should_transmit:
-            udp.transmit_item_lost(self._name, popped_item.get_name())
+            transport.transmit_item_lost(self._name, popped_item.get_name())
         if len(self._inventory) == 0:
             self.last_item_dep = math.inf
         else:
@@ -45,7 +45,7 @@ class InventoryEntity:
     def clear_inventory(self):
         self._inventory = []
         if self._should_transmit:
-            udp.transmit_clear_inventory(self._name)
+            transport.transmit_clear_inventory(self._name)
         self.last_item_dep = math.inf
 
 
@@ -64,7 +64,7 @@ class InventoryEntity:
             inventory_copy = copy.deepcopy(self._inventory)
             self._inventory = []
             if self._should_transmit:
-                udp.transmit_clear_inventory(self._name)
+                transport.transmit_clear_inventory(self._name)
             self.last_item_dep = math.inf
             return inventory_copy
         else:

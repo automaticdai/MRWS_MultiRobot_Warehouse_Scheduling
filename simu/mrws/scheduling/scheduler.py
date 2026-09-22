@@ -3,6 +3,7 @@ import math
 from collections import deque, Counter
 
 from mrws.exceptions import SimulationError
+from mrws.io import transport
 from mrws.engine.order_manager import OrderManager
 
 from mrws.scheduling.simple import (
@@ -295,6 +296,7 @@ class Scheduler:
                     self._unassign_robot(rn)
                 self._order_goal_assignment.pop(order.get_id())
                 order_manager.set_order_completion_time(order, step_ctr)
+                transport.transmit_order_complete(order.get_id())
 
                 self.schedule(step_ctr)
 

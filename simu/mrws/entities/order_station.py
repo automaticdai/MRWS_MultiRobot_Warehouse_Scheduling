@@ -1,5 +1,5 @@
 from mrws.entities.inventory import InventoryEntity
-from mrws.io import udp
+from mrws.io import transport
 import math
 
 class OrderStation(InventoryEntity):
@@ -12,7 +12,7 @@ class OrderStation(InventoryEntity):
         super().__init__(name, math.inf)
 
     def transmit_creation(self):
-        udp.transmit_goal_creation(self._name, self._x, self._y)
+        transport.transmit_goal_creation(self._name, self._x, self._y)
 
     def interact(self, obj):
         #print("Robot %s interacting with order station %s" % (obj.get_name(), self._name))

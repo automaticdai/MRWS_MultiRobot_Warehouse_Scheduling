@@ -1,5 +1,5 @@
 from mrws.models.item import Item
-from mrws.io import udp
+from mrws.io import transport
 
 
 class Shelf:
@@ -10,7 +10,7 @@ class Shelf:
         self._name = name
 
     def transmit_creation(self):
-        udp.transmit_shelf_creation(self._name, self._item.get_name(), self._x, self._y)
+        transport.transmit_shelf_creation(self._name, self._item.get_name(), self._x, self._y)
 
     def interact(self, obj):
         obj.add_item_to_inventory(self._item)
