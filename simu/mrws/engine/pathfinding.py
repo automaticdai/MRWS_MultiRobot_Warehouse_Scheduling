@@ -10,7 +10,9 @@ class PrioNode:
     f_score: int
 
 
-def compute_astar_path(width, height, position_to_robot, start_pos, target_pos):
+def compute_astar_path(width, height, position_to_robot, start_pos, target_pos,
+                       blocked_cells=frozenset()):
+    """A* over the grid. Robots and `blocked_cells` (walls) are impassable."""
     robot_x, robot_y = start_pos
     target_x, target_y = target_pos
 
@@ -40,7 +42,7 @@ def compute_astar_path(width, height, position_to_robot, start_pos, target_pos):
             if not (0 <= n[0] <= width - 1 and 0 <= n[1] <= height - 1):
                 continue
             neigh_tup = (n[0], n[1])
-            if neigh_tup not in position_to_robot:
+            if neigh_tup not in position_to_robot and neigh_tup not in blocked_cells:
                 possible_g_score = g_scores[cur_tup] + 1
                 if neigh_tup in g_scores:
                     if possible_g_score >= g_scores[neigh_tup]:

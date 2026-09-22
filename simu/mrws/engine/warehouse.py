@@ -15,6 +15,12 @@ from mrws.engine.pathfinding import compute_astar_path
 from mrws.engine import deadlock
 from mrws.utils import robot_prio_sort_key
 
+# Largest number of robots an order is sized to need. Orders hold up to
+# MAX_ROBOTS_PER_ORDER robot-loads of items, which is what lets the
+# multi-robot schedulers split an order across several robots.
+MAX_ROBOTS_PER_ORDER = 3
+
+
 class Warehouse:
     def __init__(self, w_house_filename: str, num_items: int, robot_max_inventory: int, schedule_mode: str,
                  robot_fault_rates: list[float], fault_tolerant_mode, step_limit: int):
@@ -27,6 +33,9 @@ class Warehouse:
         self._shelves = {}
         self._homes = {}
         self._position_to_robot = {}
+        # Populated by parse_warehouse_file; walls are impassable for every
+        # robot, so this must exist before any movement or pathfinding call.
+        self._wall_cells = set()
 
         self._robot_fault_rates = robot_fault_rates
         self._robot_max_inventory = robot_max_inventory
@@ -47,9 +56,16 @@ class Warehouse:
         num_goals = len(self._order_stations)
         num_shelves = len(self._shelves)
 
-        # Order size: bounded by robot inventory and shelf count
-        order_size = max(1, min(robot_max_inventory, num_shelves))
-        max_orders = max(1, num_shelves // order_size)
+        # Order size: big enough that an order can need several robots, capped
+        # by the shelf count. Sizing orders at one robot-load (the previous
+        # behaviour) made ceil(order_size / inventory) always 1, so the
+        # multi-robot schedulers silently degenerated to one robot per order.
+        robot_load = max(1, min(robot_max_inventory, num_shelves))
+        order_size = max(1, min(robot_max_inventory * MAX_ROBOTS_PER_ORDER, num_shelves))
+
+        # The order budget stays tied to a single robot-load, so that growing
+        # order_size makes orders bigger rather than making them rarer.
+        max_orders = max(1, num_shelves // robot_load)
 
         # Initial orders: at least num_robots so every robot can get a task
         num_init_orders = min(max(num_robots, num_goals * 2), max_orders)
@@ -211,10 +227,16 @@ class Warehouse:
         if self._fault_tolerant_mode:
             is_near_faulty_robot = self.cell_within_faulty_robot_move_range(x, y)
 
-        return self.cell_contains_robot(x, y) or is_near_faulty_robot
+        return self.cell_contains_robot(x, y) or self.cell_is_wall(x, y) or is_near_faulty_robot
 
     def cell_contains_robot(self, x, y):
         return (x, y) in self._position_to_robot
+
+    def cell_is_wall(self, x, y):
+        return (x, y) in self._wall_cells
+
+    def get_wall_cells(self):
+        return self._wall_cells
 
     def cell_within_faulty_robot_move_range(self, x, y):
         return (x, y) in self._faulty_blocked_cells
@@ -283,7 +305,8 @@ class Warehouse:
     def compute_robot_astar_path(self, robot_obj):
         return compute_astar_path(
             self._width, self._height, self._position_to_robot,
-            robot_obj.get_position(), robot_obj.get_target().get_position()
+            robot_obj.get_position(), robot_obj.get_target().get_position(),
+            blocked_cells=self._wall_cells
         )
 
     def transmit_initial_warehouse_layout(self):
@@ -394,6 +417,7 @@ class Warehouse:
                     goal_name_ctr = goal_name_ctr + 1
                 elif char == "W":
                     cells_copy[row_ctr].append(["wall"])
+                    self._wall_cells.add((col_ctr, row_ctr))
                 else:
                     cells_copy[row_ctr].append([])
                 col_ctr = col_ctr + 1
@@ -419,6 +443,9 @@ class Warehouse:
     def update_robot_position(self, robot_name, new_x, new_y):
         if self.cell_contains_robot(new_x, new_y):
             raise SimulationError("Two robots collided at (%s,%s)" % (new_x, new_y))
+
+        if self.cell_is_wall(new_x, new_y):
+            raise SimulationError("Robot %s drove into a wall at (%s,%s)" % (robot_name, new_x, new_y))
 
         robot_obj = self._robots[robot_name]
         old_x, old_y = robot_obj.get_position()

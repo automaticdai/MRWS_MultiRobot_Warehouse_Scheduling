@@ -98,6 +98,7 @@ class TestSensorEvasionMovesOnce(unittest.TestCase):
         wh._cells = [[[] for _ in range(5)] for _ in range(5)]
         wh._robots = {}
         wh._position_to_robot = {}
+        wh._wall_cells = set()
         wh._faulty_blocked_cells = set()
         wh.sensor_faulty_bots = {}
         wh._scheduler = _NoopScheduler()
