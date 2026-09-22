@@ -14,7 +14,7 @@ The codebase is organized as a Python package (`mrws/`) under `simu/`. CLI scrip
 cd simu
 python main.py              # Run 1000 sims (default)
 python main.py -n 1         # Run 1 simulation
-python main.py -t           # Run with UDP transmission to Unity visualizer
+python main.py -t           # Run with transmission to Unity visualizer
 python main.py -t -n 1      # Single sim with visualization
 ```
 
@@ -24,7 +24,7 @@ cd simu
 conda run -n MRWS python main.py -n 1
 ```
 
-The `-t` flag sets `ROBOTSIM_TRANSMIT=True` in the environment, which `mrws/io/udp.py` checks before sending any UDP packets. The `slow_for_transmit` parameter in `run_simulation()` adds 200ms delays between steps for visualization.
+The `-t` flag sets `ROBOTSIM_TRANSMIT=True` in the environment, which `mrws/io/transport.py` checks before sending anything. The `slow_for_transmit` parameter in `run_simulation()` adds 200ms delays between steps; it predates the TCP transport and is now only about pacing for a human watching, not about avoiding message loss.
 
 ### Verifying All Scheduling Modes
 
@@ -88,7 +88,7 @@ simu/
       order_manager.py             # OrderManager
 
     io/
-      udp.py                       # UDP transmit functions
+      transport.py                 # TCP transmit functions
       gui.py                       # PyQt6 GUI (MRWS GUI)
 ```
 
@@ -198,7 +198,11 @@ The PyQt6 GUI ("MRWS GUI") launches maximized and provides:
 
 ### Visualization Protocol
 
-UDP JSON messages sent to Unity on `127.0.0.1:35891` via `mrws/io/udp.py`. Only transmits when `ROBOTSIM_TRANSMIT` env var is `"True"`.
+Newline-delimited JSON over TCP to Unity on `127.0.0.1:35891`, via `mrws/io/transport.py`. Only transmits when `ROBOTSIM_TRANSMIT` env var is `"True"`.
+
+Unity listens; the simulator connects. It was UDP, which lost roughly a fifth of a run’s messages once the simulator outran the receive buffer (capped at `net.core.rmem_max`), silently desyncing the viewer. TCP gives backpressure instead: while a viewer is connected the simulator runs no faster than the viewer consumes. With no viewer listening, transmission is skipped silently so batch runs are unaffected; a viewer that stops reading is dropped after `SEND_TIMEOUT_S` rather than hanging the run.
+
+TCP is a stream, so messages are newline-framed — the Unity client buffers partial reads and splits on `\n`.
 
 ### Warehouse File Format
 
@@ -227,4 +231,4 @@ Warehouse files are in `simu/data/`.
 - pygad (genetic algorithm library)
 - matplotlib (for result visualization)
 - PyQt6 (for the GUI)
-- Unity 6000.0.41f1 (for viz component, in `viz/` directory)
+- Unity 6000.3.5f1 (for viz component, in `viz/` directory)

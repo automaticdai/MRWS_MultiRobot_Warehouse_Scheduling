@@ -4,7 +4,7 @@ import time
 
 from mrws.exceptions import SimulationError
 from mrws.models.item import Item
-from mrws.io import udp
+from mrws.io import transport
 from mrws.entities.shelf import Shelf
 from mrws.entities.order_station import OrderStation
 from mrws.entities.robot import Robot
@@ -19,6 +19,10 @@ from mrws.utils import robot_prio_sort_key
 # MAX_ROBOTS_PER_ORDER robot-loads of items, which is what lets the
 # multi-robot schedulers split an order across several robots.
 MAX_ROBOTS_PER_ORDER = 3
+
+# Fault rates arrive as a list of four; these name the slots, in order, for the
+# visualiser so a faulted robot can be shown as faulted rather than just stuck.
+FAULT_TYPE_NAMES = ("battery_critical", "battery_low", "actuator", "sensor")
 
 
 class Warehouse:
@@ -43,7 +47,11 @@ class Warehouse:
         # Generate items first (parse_warehouse_file assigns them to shelves)
         self._items = {}
         self._NUM_ITEMS = num_items
-        udp.transmit_start()
+        # Clear anything a previous run left in the viewer before starting this
+        # one; the client keeps its entities otherwise, and a batch of sims in
+        # one process would pile them all into the same scene.
+        transport.transmit_reset()
+        transport.transmit_start()
         self.generate_items(self._NUM_ITEMS)
 
         # Parse warehouse so entity counts are known before creating orders
@@ -89,6 +97,8 @@ class Warehouse:
         self._scheduler.schedule(1)
 
         self.transmit_initial_warehouse_layout()
+        for order_obj in self._order_manager.get_init_orders():
+            self.transmit_order(order_obj)
         self._total_steps = 0
         self._step_limit = step_limit
 
@@ -130,6 +140,7 @@ class Warehouse:
             else:
                 should_schedule = robot_obj.decrement_wait_steps()
                 if should_schedule:
+                    transport.transmit_robot_recovered(robot_obj.get_name())
                     self._needs_reschedule = True
 
         # Batch deferred schedule calls
@@ -140,6 +151,7 @@ class Warehouse:
         new_order = self._order_manager.possibly_introduce_dynamic_order(self._total_steps)
         if new_order is not None:
             #print("INTRODUCING A NEW ORDER ON STEP %s" % self._total_steps)
+            self.transmit_order(new_order)
             self._scheduler.add_order(new_order, self._total_steps)
 
         # ============================================DISPLAY LAYOUT==================================================
@@ -190,9 +202,16 @@ class Warehouse:
             #print("Robot is waiting for direction")
             self._scheduler.direct_robot(robot_obj)
 
+    def transmit_order(self, order_obj):
+        transport.transmit_order_create(order_obj.get_id(), order_obj.get_prio(),
+                                  [item.get_name() for item in order_obj.get_items()])
+
     def apply_fault_actions(self, robot_obj: Robot, fault_list):
         if not fault_list:
             return
+        for fault_index, has_faulted in enumerate(fault_list):
+            if has_faulted:
+                transport.transmit_robot_fault(robot_obj.get_name(), FAULT_TYPE_NAMES[fault_index])
         if fault_list[0]:
             robot_obj.add_wait_steps(math.inf)
         if fault_list[1]:
@@ -310,7 +329,7 @@ class Warehouse:
         )
 
     def transmit_initial_warehouse_layout(self):
-        udp.transmit_warehouse_size(self._width, self._height)
+        transport.transmit_warehouse_size(self._width, self._height)
         for row in self._cells:
             for cell in row:
                 for obj_name in cell:
@@ -427,13 +446,13 @@ class Warehouse:
         return cells_copy
 
     def transmit(self):
-        udp.transmit_warehouse_size(self._width, self._height)
+        transport.transmit_warehouse_size(self._width, self._height)
 
     def generate_items(self, num_items):
         for i in range(num_items):
             item_name = "item%s" % i
             self._items[item_name] = Item(item_name, i)
-            udp.transmit_item_existence(item_name)
+            transport.transmit_item_existence(item_name)
 
     def move_robot_next_path_spot(self, robot_obj):
         next_spot = robot_obj.get_movement_path()[0]
@@ -454,7 +473,7 @@ class Warehouse:
         self._cells[new_y][new_x].append(robot_name)
         del self._position_to_robot[(old_x, old_y)]
         self._position_to_robot[(new_x, new_y)] = robot_name
-        udp.transmit_robot_position(robot_name, new_x, new_y)
+        transport.transmit_robot_position(robot_name, new_x, new_y)
 
     # Attach deadlock methods
     attempt_resolve_deadlocks = deadlock.attempt_resolve_deadlocks

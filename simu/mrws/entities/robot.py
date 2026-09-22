@@ -2,7 +2,7 @@ import random
 import math
 from collections import deque
 
-from mrws.io import udp
+from mrws.io import transport
 from mrws.entities.inventory import InventoryEntity
 from mrws.exceptions import SimulationError
 
@@ -133,7 +133,7 @@ class Robot(InventoryEntity):
         return self._name
 
     def transmit_creation(self):
-        udp.transmit_robot_creation(self._name, self._x, self._y)
+        transport.transmit_robot_creation(self._name, self._x, self._y)
 
     def maybe_introduce_fault(self):
         # Battery fault - 2 types:

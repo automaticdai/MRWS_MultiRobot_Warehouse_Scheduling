@@ -7,7 +7,7 @@ A Python simulator for a robotic smart warehouse, with many configurable propert
 ```text
 Simulator (Python)
     |-- GUI (can be turned on/off)
-    `-- Visualiser (Unity via UDP)
+    `-- Visualiser (Unity via TCP)
 ```
 
 - `simu/`: Core simulation engine, scheduling logic, and CLI entrypoint.
@@ -25,7 +25,7 @@ Simulation:
 
 Visualisation:
 
-- Unity 6000.0.41f1
+- Unity 6000.3.5f1
 
 
 ## Usage
@@ -36,7 +36,7 @@ Run simulations from the `simu/` directory:
 cd simu
 python main.py                # Run 1000 simulations (default)
 python main.py -n 1           # Run a single simulation
-python main.py -t             # Run with UDP transmission to Unity visualiser
+python main.py -t             # Run with transmission to Unity visualiser
 python main.py -g             # Launch the MRWS GUI
 python main.py -g -m multi-robot   # GUI with a specific scheduling mode
 ```
@@ -48,7 +48,7 @@ python main.py -g -m multi-robot   # GUI with a specific scheduling mode
 | `-n` | `--num-sims` | Number of simulation cycles to run | `1000` |
 | `-m` | `--mode` | Scheduling mode (`simple`, `simple-interrupt`, `multi-robot`, `multi-robot-genetic`) | `simple-interrupt` |
 | `-w` | `--warehouse` | Path to warehouse layout file | `data/whouse.txt` |
-| `-t` | `--transmit` | Enable UDP transmission to Unity visualiser | off |
+| `-t` | `--transmit` | Enable transmission to Unity visualiser (TCP) | off |
 | `-g` | `--gui` | Launch PyQt6 debug GUI (ignores `-n`) | off |
 
 ### MRWS GUI
