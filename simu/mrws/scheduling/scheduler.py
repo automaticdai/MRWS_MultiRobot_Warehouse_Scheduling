@@ -15,6 +15,7 @@ from mrws.scheduling.multi_robot import (
     run_genetic_algorithm,
     reassign_orders_if_faulted,
     generate_order_to_complete_fault,
+    emit_load_schedule,
 )
 
 
@@ -308,3 +309,4 @@ class Scheduler:
     run_genetic_algorithm = run_genetic_algorithm
     reassign_orders_if_faulted = reassign_orders_if_faulted
     generate_order_to_complete_fault = generate_order_to_complete_fault
+    emit_load_schedule = emit_load_schedule

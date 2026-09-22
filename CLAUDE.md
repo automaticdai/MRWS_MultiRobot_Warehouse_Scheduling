@@ -41,7 +41,14 @@ for mode in ['simple', 'simple-interrupt', 'multi-robot', 'multi-robot-genetic']
 "
 ```
 
-There are no tests, linting, or formatting tools configured.
+### Tests
+
+```bash
+cd simu
+conda run -n MRWS python -m unittest discover -s tests
+```
+
+`simu/tests/` covers the encoding invariants and past crash bugs. There is no linting or formatting tooling configured.
 
 ## Package Structure
 
@@ -71,7 +78,8 @@ simu/
       scheduler.py                 # Scheduler core: __init__, schedule(), helpers
       simple.py                    # simple_single_robot_schedule, single_interrupt_robot_schedule
       multi_robot.py               # multi_robot_schedule_*, run_genetic_algorithm, fault reassignment
-      ga_handler.py                # GAHandler singleton, MockRobot, MockGoal, fitness_func
+      ga_encoding.py               # Genome layout, decoding, schedule cost model
+      ga_handler.py                # GAHandler singleton, fitness_func
 
     engine/
       warehouse.py                 # Warehouse: init, step, parsing, movement, faults
@@ -127,7 +135,7 @@ All interactable entities (`Shelf`, `OrderStation`, `RobotHome`) implement an `i
 
 ### Inventory and Item Dependencies
 
-`InventoryEntity` is a base class (used by `Robot`, `OrderStation`, and GA's `MockRobot`/`MockGoal`) implementing a LIFO stack inventory. Items have a dependency number, and **items must be added in decreasing dependency order**. This constraint drives the scheduling logic — items are sorted by dependency (highest first) when building schedules.
+`InventoryEntity` is a base class (used by `Robot` and `OrderStation`) implementing a LIFO stack inventory. Items have a dependency number, and **items must be added in decreasing dependency order**. This constraint drives the scheduling logic — items are sorted by dependency (highest first) when building schedules.
 
 ### Scheduling Modes
 
@@ -145,9 +153,22 @@ Robot schedules are lists of string targets: `"shelf3"`, `"goal0"`, `"home1"`. P
 - `"block|flag5"` — wait until flag is set before proceeding
 - `"wait"` — idle (used in GA gene space)
 
-### Genetic Algorithm (`scheduling/ga_handler.py`)
+### Genetic Algorithm (`scheduling/ga_encoding.py`, `scheduling/ga_handler.py`)
 
-`GAHandler` is a singleton that bridges the `Scheduler` and `pygad`. Gene encoding converts entity name strings to/from integers via UTF-8 byte representation. The fitness function (`fitness_func`) runs a simplified simulation with `MockRobot`/`MockGoal` objects to evaluate candidate schedules without the full warehouse.
+A genome encodes an **assignment**, not a list of stops. For an order of `n` items sorted by dependency (highest first):
+
+```
+genome[0:n]    cut bits    -- does item i open a new robot load?
+genome[n:2n]   robot picks -- which robot carries load j?
+```
+
+Because a single order station only accepts decreasing dependency, each robot's load must be a *contiguous* block of the sorted item list and loads must be delivered in block order. This encoding makes that true by construction, and decoding repairs anything out of range — so **every genome is a schedule that can actually be built**, which is what gives the search a gradient. A robot may take several loads, so the search can choose between one robot making several trips and several robots making one each.
+
+`decode_genome()` turns a genome into `[(robot_name, [Item, ...]), ...]` in delivery order. `Scheduler.emit_load_schedule()` (in `multi_robot.py`) turns that into the `block|flag` schedule, and is shared with `multi_robot_schedule_simple` so both modes emit the same structure.
+
+`schedule_cost()` is the objective: makespan plus `ROBOT_TIME_WEIGHT` × robot-time. Makespan alone makes an extra robot look free and the search hands each order most of the fleet; the robot-time term is what accounts for the cost that falls on every *other* order. A robot blocked on another robot's flag is sent home (see `parse_schedule_value`), so waiting is charged the distance back from its home — waiting on your *own* previous delivery is free.
+
+`GAHandler` is a singleton holding the per-search context, because pygad passes the fitness function nothing but the genome.
 
 ### Fault Tolerance
 
@@ -197,6 +218,7 @@ Warehouse files are in `simu/data/`.
 - **Schedule queues**: Robot `_movement_path` and schedules use `deque` — use `popleft()` not `pop(0)`.
 - **GA scaling guard**: If >50 free robots, the genetic algorithm falls back to `multi_robot_schedule_simple` to avoid combinatorial explosion.
 - **GA distance**: `GAHandler.get_distance_between()` computes taxicab distance on-demand from a positions dict.
+- **GA objective weight**: `ROBOT_TIME_WEIGHT` in `ga_encoding.py` is empirical — swept against simulated step counts, then checked on held-out warehouses. Changing it changes how many robots the genetic scheduler commits per order.
 - **Sensor fault zones**: `_faulty_blocked_cells` is a set of cells adjacent to sensor-faulted robots, recomputed each step.
 
 ## Dependencies
